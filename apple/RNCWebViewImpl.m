@@ -385,14 +385,58 @@ RCTAutoInsetsProtocol>
     NSURL *url = navigationAction.request.URL;
 
     if (_onOpenWindow) {
-      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-      [event addEntriesFromDictionary: @{@"targetUrl": url.absoluteString}];
-      _onOpenWindow(event);
+        NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+                   [event addEntriesFromDictionary: @{@"url": (navigationAction.request.URL).absoluteString,
+                                                       @"navigationType": @(navigationAction.navigationType)
+                   }];
+          [event addEntriesFromDictionary: @{@"targetUrl": url.absoluteString}];
+        RNCWebViewImpl* wkWebView = [self.delegate webView:self onOpenWindow:event withConfiguration:configuration withCallback:_onOpenWindow];
+        return wkWebView.webView;
     } else {
       [webView loadRequest:navigationAction.request];
     }
   }
   return nil;
+}
+
+- (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebViewImpl*)parentView {
+  if (self = [self initWithFrame:parentView.frame]) {
+      WKWebViewConfiguration *wkWebViewConfig;
+    wkWebViewConfig = configuration;
+    [self setUpWkWebViewConfig:parentView configuration:wkWebViewConfig]; // copy some parent props to newWindow
+    _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    _webView.UIDelegate = self;
+    _webView.navigationDelegate = self;
+    // _webView.inspectable = YES; // to inspect webview for ios 16.4+
+    if (parentView.userAgent) {
+      _webView.customUserAgent = parentView.userAgent;
+    }
+  }
+  return self;
+}
+
+- (void)setUpWkWebViewConfig:(RNCWebViewImpl*)sender configuration:(WKWebViewConfiguration *)configuration
+{
+  WKWebViewConfiguration *wkWebViewConfig = configuration;
+  WKPreferences *prefs = [[WKPreferences alloc] init];
+  BOOL _prefsUsed = NO;
+
+  if (sender.javaScriptCanOpenWindowsAutomatically) {
+    [prefs setValue:@TRUE forKey:@"javaScriptCanOpenWindowsAutomatically"];
+    _prefsUsed = YES;
+  }
+
+  if (_prefsUsed) {
+    wkWebViewConfig.preferences = prefs;
+  }
+
+  if (sender.incognito) {
+      wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+  } else {
+    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
+  }
+
+  wkWebViewConfig.userContentController = [WKUserContentController new];
 }
 
 /**

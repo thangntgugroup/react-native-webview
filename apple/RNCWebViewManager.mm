@@ -31,13 +31,27 @@ RCT_ENUM_CONVERTER(RNCWebViewPermissionGrantType, (@{
 #endif
 @end
 
-@implementation RNCWebViewManager
+@implementation RNCWebViewManager {
+    NSConditionLock *_shouldStartLoadLock;
+    BOOL _shouldStartLoad;
+    RNCWebViewImpl* newWindow;
+}
 
 RCT_EXPORT_MODULE(RNCWebView)
-
 - (RNCView *)view
 {
-  return [[RNCWebViewImpl alloc] init];
+    RNCWebViewImpl *webView = [[RNCWebViewImpl alloc] init];
+    webView.delegate = self;
+    return [[RNCWebViewImpl alloc] init];
+}
+
+- (RNCWebViewImpl*)webView:(__unused RNCWebViewImpl *)webView
+          onOpenWindow:(NSMutableDictionary<NSString *, id> *)request
+     withConfiguration:(WKWebViewConfiguration*)configuration
+          withCallback:(RCTDirectEventBlock)callback
+{
+    newWindow = [[RNCWebViewImpl alloc] initWithConfiguration:configuration from:webView];
+    return newWindow;
 }
 
 RCT_EXPORT_VIEW_PROPERTY(source, NSDictionary)

@@ -33,6 +33,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)webView:(RNCWebViewImpl *)webView
 shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
    withCallback:(RCTDirectEventBlock)callback;
+- (RNCWebViewImpl* _Nullable)webView:(RNCWebViewImpl* _Nonnull)webView
+   onOpenWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;   
 
 @end
 
